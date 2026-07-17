@@ -13,7 +13,7 @@ export const DEFAULT_BASE_URL = 'https://play-api.jc.id.lv';
 
 // A descriptive User-Agent. The platform sits behind a CDN whose default bot rules
 // reject unidentified clients (Cloudflare error 1010), so every request identifies itself.
-const USER_AGENT = 'dicechess-bot-typescript/1.0 (+https://github.com/rabestro/dicechess-bot-typescript)';
+export const USER_AGENT = 'dicechess-bot-typescript/1.0 (+https://github.com/rabestro/dicechess-bot-typescript)';
 
 /** A prefix tree of UCI micro-moves; a leaf (`{}`) is a complete legal turn. */
 export interface MoveTree {
@@ -112,6 +112,15 @@ export class BotClient {
 
 	async resign(gameId: string): Promise<void> {
 		await this.request('POST', `/bot/game/${gameId}/resign`);
+	}
+
+	/**
+	 * Register an HTTPS callback; returns `{ url, secret }`. The server runs an ownership
+	 * handshake (it POSTs a nonce to `url`, which your handler must echo — see webhook.ts).
+	 * Registered bots only; the `secret` is shown once — store it as DICECHESS_WEBHOOK_SECRET.
+	 */
+	registerWebhook(url: string): Promise<{ url: string; secret: string }> {
+		return this.request('POST', '/bot/webhook', { url }) as Promise<{ url: string; secret: string }>;
 	}
 
 	// ── transport ──────────────────────────────────────────────────────────────

@@ -8,8 +8,11 @@
   },
   "scripts": {
     "start": "tsx src/bot.ts",
+    "webhook": "tsx src/webhook-server.ts",
+    "register": "tsx src/register.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/webhook.test.ts"
   },
   "keywords": ["dicechess", "chess", "bot", "typescript"],
   "author": "Jegors Čemisovs",
