@@ -1,0 +1,22 @@
+{
+  "name": "dicechess-bot",
+  "version": "1.0.0",
+  "description": "Dependency-free TypeScript starter for Dice Chess bots.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "tsx src/bot.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["dicechess", "chess", "bot", "typescript"],
+  "author": "Jegors Čemisovs",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

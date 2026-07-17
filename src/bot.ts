@@ -1,0 +1,107 @@
+#!/usr/bin/env node
+/**
+ * A complete, runnable Dice Chess bot — poll-only, zero runtime dependencies.
+ *
+ * It mints an anonymous identity, challenges the house sparring bot, and plays full
+ * games by walking the legal-move tree the server publishes each turn. **You never
+ * implement a single rule of the variant** — the legal moves arrive on the wire.
+ *
+ * Make it your own by editing `chooseMove` (the only decision the bot makes).
+ *
+ *   npm start                      # anonymous, vs house/greedy, forever
+ *   DICECHESS_TOKEN=... npm start  # as a registered identity
+ *
+ * Environment overrides: DICECHESS_TOKEN, DICECHESS_BASE_URL, DICECHESS_OPPONENT
+ * (`team/name`, default `house/greedy`), DICECHESS_NAME, DICECHESS_POLL_SECONDS.
+ */
+
+import { randomBytes } from 'node:crypto';
+import { BotClient, DEFAULT_BASE_URL, type GameSummary, type MoveTree } from './client.js';
+
+/**
+ * Pick one complete legal turn from the prefix tree of UCI micro-moves. Each key is a
+ * micro-move; a node with no children (`{}`) is a complete turn. This baseline walks a
+ * uniformly random root-to-leaf path — replace it with your own strategy. Returns `[]`
+ * for a forced pass (the server handles it and you submit nothing).
+ */
+function chooseMove(legalMoves: MoveTree): string[] {
+	const path: string[] = [];
+	let node: MoveTree = legalMoves;
+	while (Object.keys(node).length > 0) {
+		const moves = Object.keys(node);
+		const move = moves[Math.floor(Math.random() * moves.length)];
+		path.push(move);
+		node = node[move];
+	}
+	return path;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function playTurn(client: BotClient, game: GameSummary, seeded: Set<string>): Promise<void> {
+	const gameId = game.gameId;
+
+	if (!seeded.has(gameId)) {
+		try {
+			await client.submitSeed(gameId, randomBytes(16).toString('hex'));
+		} catch {
+			/* seeding is best-effort */
+		}
+		seeded.add(gameId);
+	}
+
+	const moves = chooseMove(await client.legalMoves(gameId));
+	if (moves.length === 0) return; // forced pass — the server auto-passes
+
+	const verdict = await client.submitMove(gameId, moves);
+	if (verdict.applied) {
+		console.info(`game ${gameId.slice(0, 8)}: played ${moves.join(' ')} (v${verdict.version})`);
+	} else {
+		console.info(`game ${gameId.slice(0, 8)}: move refused (${verdict.reason})`);
+	}
+}
+
+async function main(): Promise<void> {
+	const baseUrl = process.env.DICECHESS_BASE_URL ?? DEFAULT_BASE_URL;
+	const token = process.env.DICECHESS_TOKEN;
+	const opponent = process.env.DICECHESS_OPPONENT ?? 'house/greedy';
+	const name = process.env.DICECHESS_NAME ?? 'typescript-starter';
+	const pollMs = Number(process.env.DICECHESS_POLL_SECONDS ?? '3') * 1000;
+	const [oppTeam, oppName] = opponent.split('/');
+
+	const client = new BotClient({
+		baseUrl,
+		token,
+		onUnauthorized: async (c) => {
+			await c.mintAnon(name);
+		},
+	});
+	if (!client.token) await client.mintAnon(name); // anonymous: perfect for trying things out
+
+	const seeded = new Set<string>();
+	console.info(`bot ready — challenging ${opponent} and playing forever (Ctrl-C to stop)`);
+
+	for (;;) {
+		try {
+			const games = await client.myGames();
+			if (games.length === 0) {
+				// Activity loop: no live game → offer another challenge and wait for it.
+				await client.challenge(oppTeam, oppName);
+			} else {
+				for (const game of games) {
+					if (game.dicePending && game.activeSeat === game.seat) {
+						await playTurn(client, game, seeded);
+					}
+				}
+			}
+		} catch (e) {
+			console.warn(`loop error (continuing): ${(e as Error).message}`);
+		}
+		await sleep(pollMs);
+	}
+}
+
+main().catch((e) => {
+	console.error(e);
+	process.exit(1);
+});

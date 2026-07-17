@@ -1,0 +1,25 @@
+name: CI
+
+# Hermetic checks only — typecheck and build. Playing an actual game needs the live
+# platform, so that is left to `npm start` locally rather than a flaky network CI job.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
