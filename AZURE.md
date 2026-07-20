@@ -48,9 +48,18 @@ az storage account create \
 az functionapp create \
   --resource-group "$RG" \
   --consumption-plan-location "$LOCATION" \
-  --runtime node --runtime-version 24 --functions-version 4 \
+  --runtime node --runtime-version 22 --functions-version 4 \
   --name "$APP" --storage-account "$STORAGE" --os-type Linux
 ```
+
+Node **22**, not 24: 24 is what `az`/`func` themselves suggest once 20 shows as end-of-life, but
+in practice it left the app's SCM/Kudu companion site permanently `503`-ing (`Deployment
+completed successfully`, then every "Syncing triggers" attempt failing, and even
+`az functionapp function list` erroring) on Linux Consumption — a platform-immaturity issue for
+such a new runtime, not anything about the code. Deleting the app and recreating with 22 fixed it
+outright (SCM came up healthy on the very first check). If a future runtime version does the same
+thing, this is the diagnostic path: `az functionapp log deployment show` to surface the Kudu URL,
+then `curl` it directly — `503` means the platform, not you.
 
 Your function's eventual URL: `https://$APP.azurewebsites.net/api/webhook`.
 
