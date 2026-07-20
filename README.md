@@ -44,13 +44,21 @@ function chooseMove(legalMoves: MoveTree): string[] {
 
 ## Going further
 
-- **A durable identity** (survives restarts, joins the rating ladder): set
-  `DICECHESS_TOKEN` to a registered token instead of minting anonymously. See
-  [Authentication & Identity](https://rabestro.github.io/dicechess-play-api/authentication/).
+- **A durable identity** (survives restarts; the gateway to the ladder and webhooks):
+  ```bash
+  npm run claim-identity -- <team> <name>   # prints DICECHESS_TOKEN=…, shown once
+  ```
+  See [Authentication & Identity](https://rabestro.github.io/dicechess-play-api/authentication/).
+- **Join the rating ladder** (passive — the server pairs you against other on-ladder bots and
+  your rating appears on the public [leaderboard](https://play-api.jc.id.lv/leaderboard) once
+  it converges):
+  ```bash
+  DICECHESS_TOKEN=<token> npm run ladder:join
+  ```
 - **Environment overrides:** `DICECHESS_TOKEN`, `DICECHESS_BASE_URL`,
   `DICECHESS_OPPONENT` (`team/name`, default `house/greedy`), `DICECHESS_NAME`,
   `DICECHESS_POLL_SECONDS`.
-- **Scripts:** `npm start` (run), `npm run typecheck`, `npm run build`.
+- **Scripts:** `npm start` (run), `npm run typecheck`, `npm run build`, `npm test`.
 - **The full API:** <https://rabestro.github.io/dicechess-play-api/> — REST reference,
   event streams, webhooks, and the provably-fair dice verification procedure.
 
@@ -70,11 +78,17 @@ DICECHESS_WEBHOOK_SECRET=<secret> npm run webhook
 ```
 
 For local testing, expose it with a tunnel (`cloudflared tunnel --url http://localhost:8080`)
-and register the tunnel URL. To deploy to AWS Lambda / Cloudflare Workers / Azure Functions,
-call `handleDelivery` (`src/webhook.ts`) from your platform's request handler — it is pure and
-verifies the HMAC signature for you. Same `chooseMove` as the poll bot. Webhooks are a
+and register the tunnel URL. To deploy to AWS Lambda / Cloudflare Workers, call `handleDelivery`
+(`src/webhook.ts`) from your platform's request handler — it is pure and verifies the HMAC
+signature for you. Same `chooseMove` as the poll bot. Webhooks are a
 [registered-identity](https://rabestro.github.io/dicechess-play-api/authentication/) feature and
 must be enabled on the server. Full contract: [Webhooks](https://rabestro.github.io/dicechess-play-api/reference/webhooks/).
+
+### Azure Functions (ready-made adapter)
+
+`src/functions/webhook.ts` wraps `handleDelivery` in the Azure Functions v4 programming
+model — no adapter code to write. **[See `AZURE.md`](./AZURE.md) for the full walkthrough**:
+create the Function App, deploy, register, and join the ladder, end to end.
 
 ## What's inside
 
@@ -83,8 +97,10 @@ must be enabled on the server. Full contract: [Webhooks](https://rabestro.github
 | `src/bot.ts` | The runnable poll-only bot; picks moves via `chooseMove`. |
 | `src/strategy.ts` | `chooseMove` — the one decision the bot makes. **Edit this** (shared by both modes). |
 | `src/client.ts` | Thin transport client: auth, REST calls, retry/backoff, `Retry-After`, 401 re-mint. |
-| `src/webhook-server.ts` · `src/register.ts` | Serverless webhook handler and one-time registration helper. |
+| `src/webhook-server.ts` · `src/register.ts` | Plain Node.js webhook handler and one-time registration helper. |
+| `src/functions/webhook.ts` | Azure Functions v4 adapter — same logic, Azure's request/response shape. See `AZURE.md`. |
 | `src/webhook.ts` | Pure delivery logic: HMAC verification + move selection (reuse it in any function runtime). |
+| `src/claim-identity.ts` · `src/join-ladder.ts` | Claim a durable identity, then opt into the rating ladder. |
 
 ## Connection modes
 

@@ -78,8 +78,36 @@ export class BotClient {
 		return data;
 	}
 
+	/**
+	 * Claim a durable identity (survives restarts; the gateway to the ladder and webhooks —
+	 * neither works for an anonymous token). `team`/`name` are lowercase slugs, first-come-first-served.
+	 * The returned token is shown exactly once by the server; this method does not adopt it onto
+	 * `this.token` automatically, since you'll typically run this once and store the value yourself.
+	 */
+	register(team: string, name: string): Promise<{ token: string; team: string; name: string; id: string }> {
+		return this.request('POST', '/bot/register', { team, name }, false) as Promise<{
+			token: string;
+			team: string;
+			name: string;
+			id: string;
+		}>;
+	}
+
 	account(): Promise<Record<string, unknown>> {
 		return this.request('GET', '/bot/account');
+	}
+
+	/**
+	 * Opt a registered bot into the server-paired rating ladder. Passive from here: the server
+	 * starts CRN mirror-pair games against other on-ladder bots on its own schedule. Registered
+	 * bots only (same restriction as webhooks and token rotation).
+	 */
+	joinLadder(): Promise<{ onLadder: boolean; glickoRating: number; glickoRd: number }> {
+		return this.request('POST', '/bot/ladder/join') as Promise<{
+			onLadder: boolean;
+			glickoRating: number;
+			glickoRd: number;
+		}>;
 	}
 
 	// ── challenges & games ────────────────────────────────────────────────────

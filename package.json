@@ -3,20 +3,27 @@
   "version": "1.0.0",
   "description": "Dependency-free TypeScript starter for Dice Chess bots.",
   "type": "module",
+  "main": "dist/functions/*.js",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "start": "tsx src/bot.ts",
     "webhook": "tsx src/webhook-server.ts",
+    "claim-identity": "tsx src/claim-identity.ts",
     "register": "tsx src/register.ts",
+    "ladder:join": "tsx src/join-ladder.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/webhook.test.ts"
+    "test": "tsx --test src/webhook.test.ts",
+    "func:start": "func start"
   },
   "keywords": ["dicechess", "chess", "bot", "typescript"],
   "author": "Jegors Čemisovs",
   "license": "MIT",
+  "dependencies": {
+    "@azure/functions": "^4.6.1"
+  },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",

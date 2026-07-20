@@ -2,3 +2,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+
+# Azure Functions — local-only secrets and tooling state, never committed
+local.settings.json
+.azure/
+bin/
+obj/
