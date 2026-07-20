@@ -12,8 +12,8 @@
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { DEFAULT_BASE_URL, USER_AGENT, type MoveTree } from './client.js';
-import { chooseMove } from './strategy.js';
+import { DEFAULT_BASE_URL, USER_AGENT, type Clocks, type MoveTree } from './client.js';
+import { chooseMove, type TurnContext } from './strategy.js';
 
 export const SIGNATURE_HEADER = 'x-dicechess-signature';
 export const TIMESTAMP_HEADER = 'x-dicechess-timestamp';
@@ -62,7 +62,21 @@ export async function handleDelivery(
 	if (tree === null || tree === undefined) {
 		tree = await fetchLegalMoves(baseUrl, envelope.gameId); // inline cap exceeded — public fetch
 	}
-	return { status: 200, body: { moves: chooseMove(tree ?? {}) } };
+	return { status: 200, body: { moves: await chooseMove(contextFromEnvelope(envelope, tree ?? {})) } };
+}
+
+/**
+ * Build the strategy's `TurnContext` from a delivered `yourTurn` envelope and its (already
+ * cap-resolved) legal-move tree. Exported and kept separate from `handleDelivery`'s dispatch
+ * logic so the envelope→context mapping is directly unit-testable without a live delivery.
+ */
+export function contextFromEnvelope(envelope: { seat: 'White' | 'Black'; state?: Record<string, unknown> }, tree: MoveTree): TurnContext {
+	return {
+		dfen: (envelope.state?.dfen as string) ?? '',
+		legalMoves: tree,
+		activeSeat: envelope.seat,
+		clocks: (envelope.state?.clocks as Clocks | null) ?? null,
+	};
 }
 
 async function fetchLegalMoves(baseUrl: string, gameId: string): Promise<MoveTree> {

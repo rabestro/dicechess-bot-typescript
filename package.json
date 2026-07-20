@@ -15,7 +15,7 @@
     "ladder:join": "tsx src/join-ladder.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/webhook.test.ts",
+    "test": "tsx --test src/webhook.test.ts src/strategy.test.ts",
     "func:start": "func start"
   },
   "keywords": ["dicechess", "chess", "bot", "typescript"],

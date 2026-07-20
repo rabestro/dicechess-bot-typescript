@@ -28,6 +28,30 @@ export interface GameSummary {
 	version: number;
 }
 
+/** Remaining time per side, in milliseconds. `null` on `Unlimited` games. */
+export interface Clocks {
+	white: number;
+	black: number;
+}
+
+/**
+ * The single-game snapshot (`GET /games/{id}`) — identical to the game stream's `Snapshot.state`
+ * and, apart from verification metadata, the webhook envelope's `state`. This models the fields a
+ * move-choosing strategy actually needs (position, whose turn, legal moves, clocks); see the API
+ * reference for the full wire shape (it also carries `commit`, `seed`, `clientSeeds`, `players`, …).
+ */
+export interface PublicGameState {
+	version: number;
+	/** DFEN — the 7th field encodes the pending dice pool as piece letters. */
+	dfen: string;
+	activeSeat: 'White' | 'Black';
+	dicePending: boolean;
+	clocks: Clocks | null;
+	/** The legal-move tree while `dicePending`; `null`/absent when it was too large to inline —
+	 * fetch the uncapped tree with `BotClient.legalMoves` in that case. */
+	legalMoves?: MoveTree | null;
+}
+
 export interface MoveVerdict {
 	applied: boolean;
 	version: number | null;
@@ -126,8 +150,8 @@ export class BotClient {
 		return ((data.legalMoves as MoveTree) ?? {}) as MoveTree;
 	}
 
-	snapshot(gameId: string): Promise<Record<string, unknown>> {
-		return this.request('GET', `/games/${gameId}`, undefined, false);
+	snapshot(gameId: string): Promise<PublicGameState> {
+		return this.request('GET', `/games/${gameId}`, undefined, false) as Promise<PublicGameState>;
 	}
 
 	async submitSeed(gameId: string, seed: string): Promise<void> {

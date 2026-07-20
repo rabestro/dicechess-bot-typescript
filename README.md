@@ -31,14 +31,22 @@ Requires Node 18+ (for built-in `fetch`).
 ## Make it yours
 
 The only decision the bot makes is in **`chooseMove`** (`src/strategy.ts`) — the baseline
-walks a random root-to-leaf path of the legal-move tree. Replace it with your
-strategy; everything else (auth, discovery, the activity loop, retries) is transport
-you can leave alone. Both the poll bot and the webhook handler share it.
+ignores the position entirely and walks a random root-to-leaf path of the legal-move tree.
+Replace it with real evaluation and time management; everything else (auth, discovery, the
+activity loop, retries) is transport you can leave alone. Both the poll bot and the webhook
+handler build the same `TurnContext` and share this one function.
 
 ```ts
-function chooseMove(legalMoves: MoveTree): string[] {
-  // legalMoves is a prefix tree of UCI micro-moves; a leaf ({}) is a full turn.
-  // Return the path you want to play, or [] for a forced pass.
+interface TurnContext {
+  dfen: string;               // the position to move in (7th field = the pending dice pool)
+  legalMoves: MoveTree;        // a prefix tree of UCI micro-moves; a leaf ({}) is a full turn
+  activeSeat: 'White' | 'Black'; // your seat — always the seat to move
+  clocks: { white: number; black: number } | null; // remaining ms per side; null on Unlimited
+}
+
+async function chooseMove(ctx: TurnContext): Promise<string[]> {
+  // Return the move path you want to play, or [] for a forced pass. `async` because a real
+  // strategy will likely await an engine or a model — every caller already awaits this.
 }
 ```
 
@@ -80,7 +88,8 @@ DICECHESS_WEBHOOK_SECRET=<secret> npm run webhook
 For local testing, expose it with a tunnel (`cloudflared tunnel --url http://localhost:8080`)
 and register the tunnel URL. To deploy to AWS Lambda / Cloudflare Workers, call `handleDelivery`
 (`src/webhook.ts`) from your platform's request handler — it is pure and verifies the HMAC
-signature for you. Same `chooseMove` as the poll bot. Webhooks are a
+signature for you, then builds the same `TurnContext` as the poll bot (position, legal moves,
+your seat, clocks) and calls the same `chooseMove`. Webhooks are a
 [registered-identity](https://rabestro.github.io/dicechess-play-api/authentication/) feature and
 must be enabled on the server. Full contract: [Webhooks](https://rabestro.github.io/dicechess-play-api/reference/webhooks/).
 
@@ -95,7 +104,7 @@ create the Function App, deploy, register, and join the ladder, end to end.
 | File | Role |
 | --- | --- |
 | `src/bot.ts` | The runnable poll-only bot; picks moves via `chooseMove`. |
-| `src/strategy.ts` | `chooseMove` — the one decision the bot makes. **Edit this** (shared by both modes). |
+| `src/strategy.ts` | `TurnContext` + `chooseMove` — the one decision the bot makes. **Edit this** (shared by both modes). |
 | `src/client.ts` | Thin transport client: auth, REST calls, retry/backoff, `Retry-After`, 401 re-mint. |
 | `src/webhook-server.ts` · `src/register.ts` | Plain Node.js webhook handler and one-time registration helper. |
 | `src/functions/webhook.ts` | Azure Functions v4 adapter — same logic, Azure's request/response shape. See `AZURE.md`. |

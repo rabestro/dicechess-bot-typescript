@@ -17,7 +17,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { BotClient, DEFAULT_BASE_URL, type GameSummary } from './client.js';
-import { chooseMove } from './strategy.js';
+import { chooseMove, type TurnContext } from './strategy.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -33,7 +33,13 @@ async function playTurn(client: BotClient, game: GameSummary, seeded: Set<string
 		seeded.add(gameId);
 	}
 
-	const moves = chooseMove(await client.legalMoves(gameId));
+	// One call gets dfen + clocks + the inline legal-move tree together; fall back to the
+	// dedicated (never-capped) endpoint only if the tree was too large to inline (rare).
+	const state = await client.snapshot(gameId);
+	const tree = state.legalMoves ?? (await client.legalMoves(gameId));
+	const ctx: TurnContext = { dfen: state.dfen, legalMoves: tree, activeSeat: state.activeSeat, clocks: state.clocks };
+
+	const moves = await chooseMove(ctx);
 	if (moves.length === 0) return; // forced pass — the server auto-passes
 
 	const verdict = await client.submitMove(gameId, moves);

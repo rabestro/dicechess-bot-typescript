@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { test } from 'node:test';
-import { SIGNATURE_HEADER, TIMESTAMP_HEADER, handleDelivery, verifySignature } from './webhook.js';
+import { SIGNATURE_HEADER, TIMESTAMP_HEADER, contextFromEnvelope, handleDelivery, verifySignature } from './webhook.js';
 import type { MoveTree } from './client.js';
 
 const SECRET = 'test-secret';
@@ -64,4 +64,27 @@ test('a bad signature is rejected', async () => {
 	const headers = { [TIMESTAMP_HEADER]: now(), [SIGNATURE_HEADER]: 'deadbeef' };
 	const { status } = await handleDelivery(headers, raw, SECRET);
 	assert.equal(status, 401);
+});
+
+test('contextFromEnvelope carries dfen, clocks, and the seat through — not just legalMoves', () => {
+	const envelope = {
+		seat: 'Black' as const,
+		state: {
+			dfen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 NBK',
+			clocks: { white: 295000, black: 300000 },
+			legalMoves: { e2e4: {} },
+		},
+	};
+	const ctx = contextFromEnvelope(envelope, { e2e4: {} });
+	assert.equal(ctx.dfen, envelope.state.dfen, 'the position must reach the strategy, not just the move tree');
+	assert.deepEqual(ctx.clocks, { white: 295000, black: 300000 }, 'remaining time must reach the strategy');
+	assert.equal(ctx.activeSeat, 'Black');
+	assert.deepEqual(ctx.legalMoves, { e2e4: {} });
+});
+
+test('contextFromEnvelope defaults sensibly when state is missing (e.g. the fetched-tree fallback path)', () => {
+	const ctx = contextFromEnvelope({ seat: 'White' }, { d2d4: {} });
+	assert.equal(ctx.dfen, '');
+	assert.equal(ctx.clocks, null, 'Unlimited games (and missing data) must read as null, not throw');
+	assert.deepEqual(ctx.legalMoves, { d2d4: {} });
 });
