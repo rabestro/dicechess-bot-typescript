@@ -56,13 +56,20 @@ Your function's eventual URL: `https://$APP.azurewebsites.net/api/webhook`.
 
 ## 2. Deploy the code
 
-From the repo root (`func` detects the TypeScript project and triggers a remote build —
-Azure runs `npm install` and `npm run build` for you; nothing needs to be pre-built locally):
+From the repo root. Core Tools zips up whatever is on disk right now (honouring
+`.funcignore`, which excludes the TypeScript sources) — **build first**, or you deploy an
+empty package and "Syncing triggers" fails with a generic `BadRequest` (Azure found zero
+functions to register, because `dist/` didn't exist):
 
 ```bash
-npm install       # local install, so `npm run build`/typecheck still work for you locally
-func azure functionapp publish "$APP"
+npm install
+npm run build     # produces dist/ — skip this and the deploy silently has nothing to run
+func azure functionapp publish "$APP" --typescript
 ```
+
+`--typescript` may be required even here: Core Tools' own language auto-detection can fail
+to find a marker (e.g. no `local.settings.json` yet) and refuse to publish with "Can't
+determine project language from files" — passing the flag explicitly sidesteps that.
 
 At this point the function is **live** — but `DICECHESS_WEBHOOK_SECRET` isn't set yet. That's
 fine: the ownership-handshake request the play platform sends during registration doesn't need
