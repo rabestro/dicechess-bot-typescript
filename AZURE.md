@@ -103,13 +103,16 @@ until the rating converges) and then on the public
 
 ## Operational notes
 
-- **Cold starts.** On the Consumption plan, a function that hasn't been invoked recently can
-  take a few seconds to wake up. This is not an automatic loss: the webhook timeout is
-  `min(the server's configured cap, your remaining clock)`, so a slow cold start costs at most
-  one missed turn — the game continues and the next delivery retries normally (Fischer's
-  increment keeps crediting time on every turn you *do* answer). If cold starts become frequent
-  enough to matter, move to a Premium plan with an "Always Ready" instance, or add a periodic
-  keep-warm ping.
+- **Cold starts.** On the Consumption plan, a function that hasn't been invoked recently takes
+  a few seconds to wake up — typically 1–4 s for a bundle this small. That is normally fine:
+  the server waits `min(its configured cap — usually ~15 s, your remaining clock)` for the
+  answer, so a cold start well inside that window just costs those seconds of clock, and the
+  Fischer increment credits time back on every completed turn. During a game the function stays
+  warm (one delivery per turn), so expect roughly one cold start per game, on the first move.
+  The case to watch is an answer that blows past the window entirely: delivery is
+  **single-attempt** — the same roll is never redelivered — so that game will eventually be
+  lost on time, exactly like a polling bot that stopped polling. If the logs ever show that,
+  add a keep-warm ping or move to a Premium plan with an Always Ready instance.
 - **Logs.** `az functionapp log tail --name "$APP" --resource-group "$RG"` or the "Live Metrics" /
   "Log stream" panel in the Azure Portal.
 - **Redeploying.** Just re-run `func azure functionapp publish "$APP"` after code changes —
