@@ -16,6 +16,18 @@ few dozen games) — with no server of your own to operate in the meantime.
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local) (`func`).
 - Node 18+ locally (for `npm install` / `npm run build`).
 
+:::note[Dormant or brand-new subscription?]
+If `az storage account create` (or any resource creation) fails with
+`(SubscriptionNotFound) Subscription ... was not found` even though `az account show` sees it
+fine, the actual cause is usually a **resource provider that has never been registered** on that
+subscription (`Microsoft.Storage`, `Microsoft.Web`, etc.) — a confusing error message for what
+Azure means as "this provider isn't turned on here yet." Long-dormant or freshly-created
+subscriptions often haven't lazily registered every provider. Fix: `az provider register
+--namespace Microsoft.Storage` (swap in whichever namespace the error names), then poll
+`az provider show --namespace Microsoft.Storage --query registrationState -o tsv` until it says
+`Registered` (usually under two minutes) before retrying.
+:::
+
 ## 1. Create the Azure resources (one-time)
 
 Pick a globally-unique Function App name (it becomes part of your hostname) and a storage
@@ -36,7 +48,7 @@ az storage account create \
 az functionapp create \
   --resource-group "$RG" \
   --consumption-plan-location "$LOCATION" \
-  --runtime node --runtime-version 20 --functions-version 4 \
+  --runtime node --runtime-version 24 --functions-version 4 \
   --name "$APP" --storage-account "$STORAGE" --os-type Linux
 ```
 
