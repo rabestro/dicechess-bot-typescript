@@ -4,7 +4,7 @@ This turns the starter into a pure serverless bot: Azure invokes `src/functions/
 only when it's your turn, and your response body is the move. No server to keep running,
 no timer to schedule.
 
-The end state: a bot that opts into the [rating ladder](https://rabestro.github.io/dicechess-play-api/authentication/#joining-the-rating-ladder),
+The end state: a bot that opts into the [rating ladder](https://jc.id.lv/dicechess-play-api/authentication/#joining-the-rating-ladder),
 gets automatically paired against other on-ladder bots, and shows up on the public
 [leaderboard](https://play-api.jc.id.lv/leaderboard) once its rating converges (usually a
 few dozen games) — with no server of your own to operate in the meantime.

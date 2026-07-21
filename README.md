@@ -7,7 +7,7 @@ sends each turn — so **you never implement a single rule of the variant.**
 
 MIT-licensed: copy it into a closed-source bot with no strings attached. Playing
 over the wire imposes no obligation, and this starter links no engine — see
-[Licensing for Bots](https://rabestro.github.io/dicechess-play-api/licensing/).
+[Licensing for Bots](https://jc.id.lv/dicechess-play-api/licensing/).
 
 ## Quickstart
 
@@ -56,7 +56,7 @@ async function chooseMove(ctx: TurnContext): Promise<string[]> {
   ```bash
   npm run claim-identity -- <team> <name>   # prints DICECHESS_TOKEN=…, shown once
   ```
-  See [Authentication & Identity](https://rabestro.github.io/dicechess-play-api/authentication/).
+  See [Authentication & Identity](https://jc.id.lv/dicechess-play-api/authentication/).
 - **Join the rating ladder** (passive — the server pairs you against other on-ladder bots and
   your rating appears on the public [leaderboard](https://play-api.jc.id.lv/leaderboard) once
   it converges):
@@ -67,9 +67,9 @@ async function chooseMove(ctx: TurnContext): Promise<string[]> {
   `DICECHESS_OPPONENT` (`team/name`, default `house/greedy`), `DICECHESS_NAME`,
   `DICECHESS_POLL_SECONDS`.
 - **Scripts:** `npm start` (run), `npm run typecheck`, `npm run build`, `npm test`.
-- **The full API:** <https://rabestro.github.io/dicechess-play-api/> — REST reference,
+- **The full API:** <https://jc.id.lv/dicechess-play-api/> — REST reference,
   event streams, webhooks, and the provably-fair dice verification procedure.
-- **[Play against it yourself](https://rabestro.github.io/dicechess-play-api/play-your-bot/)**
+- **[Play against it yourself](https://jc.id.lv/dicechess-play-api/play-your-bot/)**
   from the public lobby, before joining the ladder — confirms it plays a legal game end to end.
 
 ## Serverless: webhook mode
@@ -92,8 +92,8 @@ and register the tunnel URL. To deploy to AWS Lambda / Cloudflare Workers, call 
 (`src/webhook.ts`) from your platform's request handler — it is pure and verifies the HMAC
 signature for you, then builds the same `TurnContext` as the poll bot (position, legal moves,
 your seat, clocks) and calls the same `chooseMove`. Webhooks are a
-[registered-identity](https://rabestro.github.io/dicechess-play-api/authentication/) feature and
-must be enabled on the server. Full contract: [Webhooks](https://rabestro.github.io/dicechess-play-api/reference/webhooks/).
+[registered-identity](https://jc.id.lv/dicechess-play-api/authentication/) feature and
+must be enabled on the server. Full contract: [Webhooks](https://jc.id.lv/dicechess-play-api/reference/webhooks/).
 
 ### Azure Functions (ready-made adapter)
 
@@ -118,4 +118,4 @@ create the Function App, deploy, register, and join the ladder, end to end.
 This starter uses **polling** — the simplest mode, ideal for a cron/serverless
 function. For low-latency play use the ndjson **event streams**, or for pure
 serverless register a **webhook** (the server POSTs your turns). Both are
-documented under [Connection Modes](https://rabestro.github.io/dicechess-play-api/connection-modes/).
+documented under [Connection Modes](https://jc.id.lv/dicechess-play-api/connection-modes/).
